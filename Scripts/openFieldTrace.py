@@ -1,13 +1,9 @@
 #!/home/graham/anaconda2/bin/python
 import os, cv2, sys, argparse, math
 import tensorflow as tf, numpy as np, keras, keras_segmentation
-#from utils import label_map_util  
-#from utils import visualization_utils as vis_util
 import datetime
 
 # all the processing & writing happens in the constructor
-# MASK MODELS SHOULD BE FOR TOP-RIGHT QUARTER OF IMAGE!!!!
-# CLASSIFIER MODEL SHOULD BE FOR FULL IMAGE!!!!
 class Application():
   def __init__(self, inputFile, outputFile=None, headTailMod=None,
                maxFr=-1):
@@ -24,6 +20,7 @@ class Application():
       # skipping the "0" KP because it is "background"
       labL = map(lambda n: headTailMod.getKpName(n), range(1,numKps))
       self._outf.write('\t'.join(labL) + '\n')
+      self._outf.flush()
       # parse frames
       self._traceL = self._collectKpTraces(maxFr)
 
@@ -237,7 +234,9 @@ class KrKeypointViaMask:
 # for args that will be used semi-permanently
 perms = {}
 perms["mouse_det_label"] = '../Models/mouseDetectLabels.txt'
-perms["mouse_det_model"] = '../Models/mouseDetectModel_210121.pb'
+perms["mouse_det_model"] = {}
+perms["mouse_det_model"][1.0] = '../Models/mouseDetectModel_210121.pb'
+perms["mouse_det_model"][2.0] = '../Models/mouseDetectModel_220721D.pb'
 
 perms["kp_mask_model"] = '../Models/mouseKp_210127.keras'
 perms["kp_mask_model_type"] = "vgg_unet"
@@ -261,10 +260,20 @@ def main():
   ap.add_argument("--time_file",
                   help="an output file with data about runtime",
                   default='')
+  ap.add_argument("--v_detect",
+                  help="version of the mouse detector model (d: 1.0)",
+                  default='1.0')
   # for benchmarking
   args = vars(ap.parse_args())
 
   isTiming = (args["time_file"]!='')
+
+  mDetectModV = float(args['v_detect'])
+  if mDetectModV not in perms["mouse_det_model"]:
+    availL = list(perms["mouse_det_model"].keys())
+    availL.sort()
+    availS = ', '.join(list(map(str,availL)))
+    raise ValueError('Bad detector version. Available: '+availS)
   
   headTailLocalMod = KrKeypointViaMask(perms["kp_mask_model_type"],
                                   int(perms["kp_mask_n_classes"]),
@@ -272,15 +281,14 @@ def main():
                                   int(perms["kp_mask_input_height"]),
                                   perms["kp_mask_model"],
                                   numToName=perms["kp_mask_num_to_name"])
-  mouseMod = TfObjectDetector(perms["mouse_det_model"],perms["mouse_det_label"])
+  mouseMod = TfObjectDetector(perms["mouse_det_model"][mDetectModV],
+                              perms["mouse_det_label"])
   headTailFullMod = TieredKpModel(mouseMod,headTailLocalMod,boxSizeChange=1.2)
 
   # start the app
   if isTiming: startTime = datetime.datetime.now()
   app = Application(args["input_mov"],outputFile=args["output_file"],
                     headTailMod=headTailFullMod,
-                    #mouseMod=mouseMod,headTailMod=headTailMod,
-                    #handMod=handMod,initPD=initPD_WW,trMatrix=trMatrix_WW,
                     maxFr=int(args["max_fr"]) )
 
   if isTiming:
