@@ -95,6 +95,8 @@ output is used to calculate the keypoint positions.
 
 ### Object detection
 
+#### Version 1.0 (default)
+
 An object detection model was trained to detect a mouse in the open field environment through transfer learning,
 applied to the 
 <a href="https://www.kaggle.com/models/tensorflow/ssd-mobilenet-v1/">ssd_mobilenet_v1 model</a>, which had been
@@ -107,8 +109,8 @@ black coats were filmed, and 1,000 frame images were randomly
 selected from 14 videos for annotation, 963 of which contained mice and so could be used.  Those were randomly split into training
 (672 images) and test (291 images) sets.  For white boxes, 
 <a href="https://www.jax.org/news-and-insights/jax-blog/2020/august/jax-diversity-outbred-mice-a-genetically-diverse-mouse-for-a-diverse-human">JAX Diversity Outbred</a>
-mice were filmed, and 600 images were annotated from 128 source videos,  575 of which contained mice and so could be used.  
-Those were randomly split into training (401 images) and test (174 images) sets.
+mice were filmed, and 600 images were annotated from 128 source videos,  575 of which contained mice and so could be used. Those were randomly
+split into training (401 images) and test (174 images) sets.
 
 The training set was expanded using image augmentation.  As with hand detection, there was an emphasis on making
 the detector model robust against changes in mouse coat color.  Augmentations applied to both the white-box anbd
@@ -122,6 +124,25 @@ created a training set of 15,003 images.
 The object detection model is applied to each image, and the top-scoring box used for downstream analysis, irrespective of the
 score given.  Under this regime, the intersection-over-union (IoU) score for this model in the context of green boxes from the test
 set described above (the true use case) was <b>0.835</b>, while the IoU score for DO mice in white boxes was <b>0.870</b>.
+
+The v1.0 model is used by default, and was exclusively used for initially published results (i.e. in 
+<a href="https://www.biorxiv.org/content/10.1101/2025.05.13.653808v1">this manuscript</a>).
+
+#### Version 2.0
+
+This alternative model was developed in response to an observed error mode: when post-it notes that looked substantially different
+from the example shown on the [<i>In Vivo</i> Protocol](docs/InVivoNotes.md) page, the v1.0 model tended to identify the post-it note as
+a mouse in some frames.  This could cause erratic, artifactual movements across the box, between the positions of the mouse and the
+post-it, that would amplify the apparent movement and time spent in the center of the box.  It could also cause apparent inactivity,
+if the post-it was preferred across a large majority of frames.
+
+The v2.0 model was trained similarly to the v1.0 model, but with an additional images generated through image augmentation. Existing
+annotated images were augmented by adding computer-drawn quadralaterals of random size and color, with color-based augmentations as
+described above additionally applied. This model was applied in the same manner as the v1.0 model, and it improved the mean green-box
+IoU score for DO mice to <b>0.858</b>.
+
+The v2.0 model can be selected from the command line when running the ```openFieldTrace.py``` script using the flag
+```--v_detect 2.0```.
 
 ### Keypoint detection
 
