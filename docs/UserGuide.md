@@ -87,6 +87,7 @@ optional arguments:
   --max_fr MAX_FR       max num frames to analyze
   --time_file TIME_FILE
                         an output file with data about runtime
+  --v_detect V_DETECT   version of the mouse detector model (d: 1.0)
 ```
 # Args for markFieldBoxCorners.py:
 ```
