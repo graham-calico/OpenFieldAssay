@@ -266,6 +266,9 @@ def main():
   # for benchmarking
   args = vars(ap.parse_args())
 
+  if not os.path.isfile(args["input_mov"]):
+    raise ValueError("input movie not found")
+
   isTiming = (args["time_file"]!='')
 
   mDetectModV = float(args['v_detect'])
